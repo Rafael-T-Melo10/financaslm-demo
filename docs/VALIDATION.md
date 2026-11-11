@@ -18,3 +18,9 @@ The public tree was reviewed with detect-secrets plus targeted checks for provid
 Only the newly generated screenshots and synthetic PDF (where present) are included as demonstration assets. Screenshots have no EXIF metadata; the PDF identifies itself as fictional. Open Sans font attribution is retained where bundled. No original binary document, financial report, dataset, client artwork, database or historical commit is part of these new repositories.
 
 This review is not a penetration test or a security certification. Docker Compose configuration was prepared, but the local validation used native processes because the Docker engine was not running. The GitHub Actions jobs provide an independent clean-checkout validation after publication.
+
+## Independent clean-checkout verification
+
+GitHub Actions completed successfully on 2026-11-11 for code commit `08eeee11ed89113c7df53e914d2f9cdfc2ba21a7`: [view run](https://github.com/Rafael-T-Melo10/financaslm-demo/actions/runs/43116553568). Dependencies were installed from the repository in clean hosted runners.
+
+All 231 backend tests, the production build and all 11 end-to-end browser scenarios passed. The browser suite includes the synthetic document import, login failure/recovery and mobile overflow checks. The initial mobile assistant overflow was corrected before this successful run.

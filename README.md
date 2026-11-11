@@ -1,5 +1,7 @@
 # FinançasLM
 
+[![Tests and build](https://github.com/Rafael-T-Melo10/financaslm-demo/actions/workflows/ci.yml/badge.svg)](https://github.com/Rafael-T-Melo10/financaslm-demo/actions/workflows/ci.yml)
+
 **A personal-finance application with authenticated APIs, document imports and user-scoped SQL analysis.**
 
 Track income, expenses, installments and recurring commitments in a Vue dashboard backed by a relational database. The code also includes Gmail import and an optional local language-model assistant, with both integrations disabled in the default demo.
