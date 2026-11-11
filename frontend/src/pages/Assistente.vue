@@ -471,6 +471,7 @@ function vereditoClasse(veredito) {
 .sidebar {
   display: flex;
   flex-direction: column;
+  min-width: 0;
   gap: 1rem;
   overflow-y: auto;
   padding-right: 0.15rem;
@@ -1001,7 +1002,7 @@ h1 {
   }
 
   .layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     height: auto;
   }
 
