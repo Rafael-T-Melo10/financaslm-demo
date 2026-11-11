@@ -1,0 +1,24 @@
+# Local secrets, datasets and generated artifacts
+.env
+.env.*
+!.env.example
+.demo/
+.venv/
+venv/
+node_modules/
+dist/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.tsbuildinfo
+staticfiles/
+*.db
+*.sqlite*
+*.dump
+*.bak
+*.log
+backups/
+uploads/
+artifacts/
+logs_assistente/
+.gitnexus/

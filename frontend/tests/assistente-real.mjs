@@ -1,0 +1,40 @@
+import { chromium } from 'playwright'
+import assert from 'node:assert/strict'
+import fs from 'node:fs/promises'
+const browser = await chromium.launch({ channel: process.env.PLAYWRIGHT_CHANNEL || 'chrome', headless: true })
+const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } })
+const registros = []
+try {
+ await page.goto('http://localhost:3100/login')
+ await page.locator('#email').fill('avaliacao@example.org')
+ await page.getByPlaceholder('Sua senha').fill('Validacao2026!')
+ await page.getByRole('button', { name: 'Entrar', exact: true }).click()
+ await page.waitForURL('http://localhost:3100/')
+ await page.goto('http://localhost:3100/assistente')
+ await page.locator('textarea').fill('Qual foi minha receita em julho de 2026?')
+ const resposta = page.waitForResponse(r => r.url().includes('/assistente/perguntar') && r.request().method() === 'POST', { timeout: 180000 })
+ await page.locator('textarea').press('Enter')
+ const r = await resposta
+ assert.equal(r.status(), 200)
+ const corpo = await r.json()
+ assert.ok(corpo.dados.resposta)
+ await page.getByText(corpo.dados.resposta, { exact: false }).first().waitFor()
+ await page.screenshot({ path: '../docs/evidencias/assistente-resposta-real.png', fullPage: true })
+ registros.push({ etapa: 'Resposta real Ollama exibida no navegador', status: 'aprovado', dados: corpo.dados })
+ await page.context().clearCookies()
+ await page.goto('http://localhost:3101/cadastro')
+ await page.locator('#nome').fill('Validacao sem Ollama')
+ await page.locator('#email').fill(`sem-ollama-${Date.now()}@example.org`)
+ await page.getByPlaceholder('Sua senha').fill('Validacao2026!')
+ await page.getByRole('button', { name: 'Cadastrar', exact: true }).click()
+ await page.waitForURL('http://localhost:3101/')
+ await page.goto('http://localhost:3101/assistente')
+ await page.waitForLoadState('networkidle')
+ assert.equal(await page.locator('textarea').isDisabled(), true)
+ await page.screenshot({ path: '../docs/evidencias/assistente-indisponivel.png', fullPage: true })
+ await page.goto('http://localhost:3101/receitas')
+ await page.getByRole('button', { name: 'Nova receita', exact: true }).waitFor()
+ registros.push({ etapa: 'Copia limpa: cadastro e receitas funcionam com assistente desabilitado', status: 'aprovado' })
+ await fs.writeFile('../docs/evidencias/assistente-real.json', JSON.stringify(registros, null, 2))
+ console.log('2 verificacoes aprovadas')
+} finally { await browser.close() }

@@ -1,0 +1,95 @@
+name: Tests and build
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: portfolio_test
+          POSTGRES_PASSWORD: isolated-ci-password
+          POSTGRES_DB: financaslm_validacao
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U portfolio_test -d financaslm_validacao"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: '5432'
+      POSTGRES_USER: portfolio_test
+      POSTGRES_PASSWORD: isolated-ci-password
+      POSTGRES_DB: financaslm_validacao
+      TEST_POSTGRES_HOST: 127.0.0.1
+      TEST_POSTGRES_PORT: '5432'
+      TEST_POSTGRES_USER: portfolio_test
+      TEST_POSTGRES_PASSWORD: isolated-ci-password
+      TEST_POSTGRES_DB: financaslm_validacao
+      GMAIL_SYNC_ENABLED: 'false'
+      WHATSAPP_HABILITADO: 'false'
+      ASSISTENTE_LOG_DIR: ''
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r requirements-dev.txt
+      - run: python -m alembic upgrade head
+      - run: python -m pytest -q
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run build
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: python -m pip install -r backend/requirements-dev.txt
+      - run: npm ci
+        working-directory: frontend
+      - run: npx playwright install --with-deps chromium
+        working-directory: frontend
+      - run: python scripts/configure_demo.py
+      - run: python scripts/local_demo.py --prepare-only
+      - name: Start isolated demo servers
+        run: |
+          python scripts/local_demo.py > /tmp/finance-api.log 2>&1 &
+          cd frontend
+          npm run demo > /tmp/finance-web.log 2>&1 &
+      - name: Wait for HTTP services
+        run: |
+          python - <<'PY'
+          import time, urllib.request
+          for url in ['http://127.0.0.1:8012/health', 'http://127.0.0.1:3012']:
+              for attempt in range(40):
+                  try:
+                      urllib.request.urlopen(url, timeout=2)
+                      break
+                  except Exception:
+                      time.sleep(1)
+              else:
+                  raise RuntimeError('Service did not start: ' + url)
+          PY
+      - run: npm run test:e2e
+        working-directory: frontend
